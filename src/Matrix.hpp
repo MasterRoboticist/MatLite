@@ -1,3 +1,4 @@
+#pragma once
 #include <stdexcept>
 #include <iostream>
 #include <stdio.h>
@@ -15,14 +16,26 @@ template <int nrow, int ncol=1> class Matrix {
             double mat[nrow][ncol];
         }
 
-        // take input in the form {{1,2,3},{4,5,6}} of arbitrary size
-        Matrix(double (&&mat)[nrow][ncol]) : Matrix(mat){}
-
-        Matrix(double (&mat)[nrow][ncol]){
+        // take input in the form {{1,2,3},{4,5,6}} or a matrix of arbitrary size
+        Matrix(const double (&mat)[nrow][ncol]){
             for(int row = 0; row < nrow; row++){
                 for(int col = 0; col < ncol; col++){
                     matrix[row][col] = mat[row][col];
                 }
+            }
+        }
+
+        // Matrix(const Matrix<nrow, ncol> &mat){
+        //     for(int row = 0; row < nrow; row++){
+        //         for(int col = 0; col < ncol; col++){
+        //             matrix[row][col] = mat(row, col);
+        //         }
+        //     }
+        // }
+
+        Matrix(const double (&mat)[nrow]){
+            for(int row = 0; row < nrow; row++){
+                matrix[row][0] = mat[row];
             }
         }
 
@@ -34,71 +47,132 @@ template <int nrow, int ncol=1> class Matrix {
             }
         }
 
+        Matrix(const std::vector<double> mat){
+            for(int row = 0; row < nrow; row++){
+                matrix[row][0] = mat[row];
+            }
+        }
+
+        void operator =(const double (&arr)[nrow][ncol]);
+
         // returns the element at x, y in the matrix
-        double& operator ()(int a, int b);
+        double& operator ()(const int &a, const int &b);
+        double get(const int &a, const int &b) const;
+
+        // returns the element at x in a vector
+        // a matrix is a vector if nrow or ncol is 1
+        double& operator ()(const int &a);
 
         // multiplies two matrices together and returns a new matrix of their product
         template<int otherncol>
-            Matrix<nrow, otherncol> operator *(Matrix<ncol, otherncol>& mat2);
-            //Matrix<nrow, otherncol> operator *(Matrix<nrow, ncol>& mat1, Matrix<ncol, otherncol>& mat2);
+            Matrix<nrow, otherncol> operator *(const Matrix<ncol, otherncol> &mat2) const;
+
+        // multiplies a matrix by a value and returns a new matrix
+        Matrix<nrow, ncol> operator *(const double &num) const;
 
         // multiplies two matrices together and updates this matrix to be their product
         // other matrix must be a square matrix
-        void operator *=(Matrix<ncol, ncol>& otherMat);
+        void operator *=(const Matrix<ncol, ncol>& otherMat);
 
         void operator *=(double num);
 
 
         // adds two matrices together and returns a new matrix of their elementwise sum
-        Matrix<nrow, ncol> operator +(Matrix<nrow, ncol>& mat2);
+        Matrix<nrow, ncol> operator +(const Matrix<nrow, ncol>& mat2) const;
 
         // adds two matrices together and updates this matrix to be their elementwise sum
-        void operator +=(Matrix<nrow, ncol>& otherMat);
+        void operator +=(const Matrix<nrow, ncol>& otherMat);
         
-
-
-        // friend std::ostream& operator <<(std::ostream& os, Matrix<nrow, ncol>& mat);
-
         // returns the transpose of the matrix
-        Matrix<ncol, nrow> T();
+        Matrix<ncol, nrow> T() const;
 
     private:
         // multiplies the two matrices together and stores the result in the given return matrix
         template<int otherncol>
-            static void matMult(Matrix<nrow, ncol>& mat1, Matrix<ncol, otherncol>& mat2, Matrix<nrow, otherncol>& returnMat);
+            static void matMult(const Matrix<nrow, ncol>& mat1, const Matrix<ncol, otherncol>& mat2, Matrix<nrow, otherncol>& returnMat);
 
         // adds two matrices together and returns a new matrix of their elementwise sum
-        static void matAdd(Matrix<nrow, ncol>& mat1, Matrix<nrow, ncol>& mat2, Matrix<nrow, ncol>& returnMat);
-
+        static void matAdd(const Matrix<nrow, ncol>& mat1, const Matrix<nrow, ncol>& mat2, Matrix<nrow, ncol>& returnMat);
 };
 
+// allows setting of matrix contents using =
+template <int nrow, int ncol>
+void Matrix<nrow, ncol>::operator =(const double (&arr)[nrow][ncol]){
+    for(int row = 0; row < nrow; row++){
+        for(int col = 0; col < ncol; col++){
+            matrix[row][col] = arr[row][col];
+        }
+    }
+}
 
 // returns the element at x, y in the matrix
 template <int nrow, int ncol>
-double& Matrix<nrow, ncol>::operator ()(int a, int b){
+double& Matrix<nrow, ncol>::operator ()(const int &a, const int &b){
     // check if a and b are in bounds
     if(0 <= a && a < nrow){
         if(0 <= b && b < ncol){
             return matrix[a][b];
         }
-        else throw std::out_of_range("In Matrix[a,b] index 'b' out of bounds");
+        else throw std::out_of_range("In Matrix(a,b) index 'b' out of bounds");
     }
-    else throw std::out_of_range("In Matrix[a,b] index 'a' out of bounds");
+    else throw std::out_of_range("In Matrix(a,b) index 'a' out of bounds");
+}
+
+template <int nrow, int ncol>
+double Matrix<nrow, ncol>::get(const int &a, const int &b) const{
+    // check if a and b are in bounds
+    if(0 <= a && a < nrow){
+        if(0 <= b && b < ncol){
+            return matrix[a][b];
+        }
+        else throw std::out_of_range("In Matrix(a,b) index 'b' out of bounds");
+    }
+    else throw std::out_of_range("In Matrix(a,b) index 'a' out of bounds");
+}
+
+// returns the element at x in a vector
+// a matrix is a vector if nrow or ncol is 1
+template <int nrow, int ncol>
+double& Matrix<nrow, ncol>::operator ()(const int &a){
+    // check if a is in bounds
+    if(ncol == 1){
+        if(a > nrow){
+            throw std::out_of_range("In Matrix(a), vector index out of bounds");
+        }
+        return matrix[a][0];
+    }
+    if(nrow == 1){
+        if(a > ncol){
+            throw std::out_of_range("In Matrix(a), vector index out of bounds");
+        }
+        return matrix[0][a];
+    }
+    else throw std::out_of_range("Matrix is not a vector, but was indexed like one. Did you mean Matrix(a,b)?");
 }
 
 // multiplies two matrices together and returns a new matrix of their product
 template <int nrow, int ncol>
 template <int otherncol>
-    Matrix<nrow, otherncol> Matrix<nrow, ncol>::operator *(Matrix<ncol, otherncol>& mat2){
+    Matrix<nrow, otherncol> Matrix<nrow, ncol>::operator *(const Matrix<ncol, otherncol> &mat2) const{
         Matrix<nrow, otherncol> newMat;
         Matrix<nrow, ncol>::matMult(*this, mat2, newMat);
         return newMat;
     }
 
+// multiplies a matrix by a value and returns a new matrix
+template <int nrow, int ncol>
+Matrix<nrow, ncol> Matrix<nrow, ncol>::operator *(const double &num) const{
+    Matrix<nrow, ncol> newMat = *this;
+    double* start = &newMat(0,0);
+    for(double* element = start; element < start + ncol*nrow; element++)
+        *element *= num;
+    return newMat;
+}
+
 // multiplies two matrices together and updates this matrix to be their product
 // other matrix must be a square matrix
 template <int nrow, int ncol>
-void Matrix<nrow, ncol>::operator *=(Matrix<ncol, ncol>& otherMat){
+void Matrix<nrow, ncol>::operator *=(const Matrix<ncol, ncol>& otherMat){
     Matrix<nrow, ncol> thisMatCopy = *this;
     matMult(thisMatCopy, otherMat, *this);
 }
@@ -113,7 +187,7 @@ void Matrix<nrow, ncol>::operator *=(double num){
 
 // adds two matrices together and returns a new matrix of their elementwise sum
 template <int nrow, int ncol>
-Matrix<nrow, ncol> Matrix<nrow, ncol>::operator +(Matrix<nrow, ncol>& mat2){
+Matrix<nrow, ncol> Matrix<nrow, ncol>::operator +(const Matrix<nrow, ncol>& mat2) const{
     Matrix<nrow, ncol> returnMat;
     matAdd(*this, mat2, returnMat);
     return returnMat;
@@ -121,7 +195,7 @@ Matrix<nrow, ncol> Matrix<nrow, ncol>::operator +(Matrix<nrow, ncol>& mat2){
 
 // adds two matrices together and updates this matrix to be their elementwise sum
 template <int nrow, int ncol>
-void Matrix<nrow, ncol>::operator +=(Matrix<nrow, ncol>& otherMat){
+void Matrix<nrow, ncol>::operator +=(const Matrix<nrow, ncol>& otherMat){
     Matrix<nrow, ncol> thisMatCopy = *this;
     matAdd(thisMatCopy, otherMat, *this);
 }
@@ -129,11 +203,11 @@ void Matrix<nrow, ncol>::operator +=(Matrix<nrow, ncol>& otherMat){
 
 // returns the transpose of the matrix
 template <int nrow, int ncol>
-Matrix<ncol, nrow> Matrix<nrow, ncol>::T(){
+Matrix<ncol, nrow> Matrix<nrow, ncol>::T() const{
     Matrix<ncol, nrow> tmat;
     for(int row = 0; row < nrow; row++){
         for(int col = 0; col < ncol; col++){
-            tmat(col, row) = (*this)(row, col);
+            tmat(col, row) = this->get(row, col);
         }
     }
     return tmat;
@@ -142,17 +216,27 @@ Matrix<ncol, nrow> Matrix<nrow, ncol>::T(){
 // multiplies the two matrices together and stores the result in the given return matrix
 template <int nrow, int ncol>
 template <int otherncol>
-    void Matrix<nrow, ncol>::matMult(Matrix<nrow, ncol>& mat1, Matrix<ncol, otherncol>& mat2, Matrix<nrow, otherncol>& returnMat){
+    void Matrix<nrow, ncol>::matMult(const Matrix<nrow, ncol>& mat1, const Matrix<ncol, otherncol>& mat2, Matrix<nrow, otherncol>& returnMat){
         for(int row = 0; row < nrow; row++){
             for(int col = 0; col < otherncol; col++){
                 double dotProd = 0;
                 for(int numVal = 0; numVal < ncol; numVal++){
-                    dotProd += mat1(row, numVal) * mat2(numVal, col);
+                    dotProd += mat1.get(row, numVal) * mat2.get(numVal, col);
                 }
                 returnMat(row, col) = dotProd;
             }
         }
     }
+
+// adds two matrices together and returns a new matrix of their elementwise sum
+template <int nrow, int ncol>
+void Matrix<nrow, ncol>::matAdd(const Matrix<nrow, ncol>& mat1, const Matrix<nrow, ncol>& mat2, Matrix<nrow, ncol>& returnMat){
+    for(int row = 0; row < nrow; row++){
+        for(int col = 0; col < ncol; col++){
+            returnMat(row, col) = mat1.get(row, col) + mat2.get(row,col);
+        }
+    }
+}
 
 template <int nrow, int ncol>
 std::ostream& operator <<(std::ostream& os, Matrix<nrow, ncol>& mat){
@@ -178,12 +262,7 @@ std::ostream& operator <<(std::ostream& os, Matrix<nrow, ncol>&& mat){
     return os;
 }
 
-// adds two matrices together and returns a new matrix of their elementwise sum
-template <int nrow, int ncol>
-void Matrix<nrow, ncol>::matAdd(Matrix<nrow, ncol>& mat1, Matrix<nrow, ncol>& mat2, Matrix<nrow, ncol>& returnMat){
-    for(int row = 0; row < nrow; row++){
-        for(int col = 0; col < ncol; col++){
-            returnMat(row, col) = mat1(row, col) + mat2(row,col);
-        }
-    }
-}
+
+
+template<int dim>
+using Vector = Matrix<dim>;
