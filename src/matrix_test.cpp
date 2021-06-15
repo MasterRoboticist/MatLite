@@ -73,9 +73,9 @@ void tryAllMatrix(){
     cout << mat2 << mat2.T() << endl;
 }
 
-int main(){
-    // tryAllMatrix();
-    tryAllTM();
-};
+// int main(){
+//     // tryAllMatrix();
+//     // tryAllTM();
+// };
 
 

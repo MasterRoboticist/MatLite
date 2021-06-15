@@ -1,3 +1,4 @@
+# pragma once
 #include "Matrix.hpp"
 
 // a matrix that is a 3 long vector representing x,y,z coordinates
